@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 260px; padding: 1rem; font-family: sans-serif; }
+    h2 { margin-top: 0; font-size: 1rem; }
+    input { width: 100%; padding: 0.4rem; margin: 0.3rem 0; box-sizing: border-box; }
+    button { width: 100%; padding: 0.4rem; margin: 0.2rem 0; cursor: pointer; }
+    ul { list-style: none; padding: 0; max-height: 150px; overflow: auto; }
+    li { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid #eee; }
+    .row { display: flex; gap: 0.4rem; }
+    .row input, .row button { width: auto; flex: 1; }
+  </style>
+</head>
+<body>
+  <h2>SiteLock 设置</h2>
+  <label>密码</label>
+  <div class="row">
+    <input type="password" id="pwd" placeholder="新密码">
+    <button id="savePwd">保存</button>
+  </div>
+  <hr>
+  <label>添加要阻断的网站</label>
+  <input type="text" id="site" placeholder="例如：example.com">
+  <button id="add">添加</button>
+  <ul id="list"></ul>
+  <hr>
+  <button id="clearUnlock">清除本次解锁状态</button>
+  <script src="popup.js"></script>
+</body>
+</html>
