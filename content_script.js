@@ -27,12 +27,13 @@ function check() {
   if (!hostname) return;
   if (isJustUnlocked(hostname)) return;
 
-  chrome.storage.local.get(['blockedSites', 'unlockedSites'], (res) => {
+  chrome.storage.local.get(['blockedSites', 'unlockedSites', 'lockPageStyle'], (res) => {
     const list = res.blockedSites || [];
     const unlocked = res.unlockedSites || [];
+    const style = res.lockPageStyle || 'default';
     if (isBlocked(hostname, list) && !unlocked.includes(hostname)) {
       location.replace(
-        chrome.runtime.getURL('blocked.html?target=' + encodeURIComponent(location.href))
+        chrome.runtime.getURL('blocked.html?style=' + encodeURIComponent(style) + '&target=' + encodeURIComponent(location.href))
       );
     }
   });

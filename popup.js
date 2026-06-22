@@ -1,6 +1,7 @@
 const BLOCKED_KEY = 'blockedSites';
 const UNLOCKED_KEY = 'unlockedSites';
 const PASSWORD_KEY = 'sitePassword';
+const STYLE_KEY = 'lockPageStyle';
 
 function escapeHtml(str) {
   return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -34,8 +35,9 @@ function render(list, unlocked) {
 }
 
 function load() {
-  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY], (res) => {
+  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY, STYLE_KEY], (res) => {
     render(res[BLOCKED_KEY] || [], res[UNLOCKED_KEY] || []);
+    document.getElementById('styleSelect').value = res[STYLE_KEY] || 'default';
   });
 }
 
@@ -83,13 +85,16 @@ function clearUnlock() {
 document.getElementById('add').addEventListener('click', add);
 document.getElementById('savePwd').addEventListener('click', savePwd);
 document.getElementById('clearUnlock').addEventListener('click', clearUnlock);
+document.getElementById('styleSelect').addEventListener('change', (e) => {
+  chrome.storage.local.set({ [STYLE_KEY]: e.target.value });
+});
 document.getElementById('site').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') add();
 });
 load();
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && (changes[BLOCKED_KEY] || changes[UNLOCKED_KEY])) {
+  if (area === 'local' && (changes[BLOCKED_KEY] || changes[UNLOCKED_KEY] || changes[STYLE_KEY])) {
     load();
   }
 });
