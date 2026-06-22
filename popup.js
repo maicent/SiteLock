@@ -2,7 +2,11 @@ const BLOCKED_KEY = 'blockedSites';
 const UNLOCKED_KEY = 'unlockedSites';
 const PASSWORD_KEY = 'sitePassword';
 
-function render(list) {
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function render(list, unlocked) {
   const ul = document.getElementById('list');
   ul.innerHTML = '';
   list.forEach((site) => {
@@ -13,15 +17,25 @@ function render(list) {
   ul.querySelectorAll('button[data-site]').forEach((btn) => {
     btn.addEventListener('click', () => remove(btn.dataset.site));
   });
-}
 
-function escapeHtml(str) {
-  return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const unlockedUl = document.getElementById('unlockedList');
+  unlockedUl.innerHTML = '';
+  if (!unlocked || unlocked.length === 0) {
+    const li = document.createElement('li');
+    li.textContent = '无';
+    unlockedUl.appendChild(li);
+  } else {
+    unlocked.forEach((site) => {
+      const li = document.createElement('li');
+      li.textContent = escapeHtml(site);
+      unlockedUl.appendChild(li);
+    });
+  }
 }
 
 function load() {
-  chrome.storage.local.get([BLOCKED_KEY], (res) => {
-    render(res[BLOCKED_KEY] || []);
+  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY], (res) => {
+    render(res[BLOCKED_KEY] || [], res[UNLOCKED_KEY] || []);
   });
 }
 
@@ -30,20 +44,22 @@ function add() {
   let site = input.value.trim();
   if (!site) return;
   site = site.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-  chrome.storage.local.get([BLOCKED_KEY], (res) => {
+  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY], (res) => {
     const list = res[BLOCKED_KEY] || [];
+    const unlocked = res[UNLOCKED_KEY] || [];
     if (!list.includes(site)) {
       list.push(site);
-      chrome.storage.local.set({ [BLOCKED_KEY]: list }, () => render(list));
+      chrome.storage.local.set({ [BLOCKED_KEY]: list }, () => render(list, unlocked));
     }
     input.value = '';
   });
 }
 
 function remove(site) {
-  chrome.storage.local.get([BLOCKED_KEY], (res) => {
+  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY], (res) => {
     const list = (res[BLOCKED_KEY] || []).filter((s) => s !== site);
-    chrome.storage.local.set({ [BLOCKED_KEY]: list }, () => render(list));
+    const unlocked = res[UNLOCKED_KEY] || [];
+    chrome.storage.local.set({ [BLOCKED_KEY]: list }, () => render(list, unlocked));
   });
 }
 
@@ -57,16 +73,10 @@ function savePwd() {
 }
 
 function clearUnlock() {
-  chrome.storage.local.set({ [UNLOCKED_KEY]: [] }, () => {
-    alert('已清除解锁状态');
-  });
-}
-
-function showDebug() {
-  chrome.storage.local.get([BLOCKED_KEY, UNLOCKED_KEY], (res) => {
-    const blocked = res[BLOCKED_KEY] || [];
-    const unlocked = res[UNLOCKED_KEY] || [];
-    alert(`阻断列表：${JSON.stringify(blocked)}\n已解锁：${JSON.stringify(unlocked)}`);
+  chrome.storage.local.get([BLOCKED_KEY], (res) => {
+    chrome.storage.local.set({ [UNLOCKED_KEY]: [] }, () => {
+      render(res[BLOCKED_KEY] || [], []);
+    });
   });
 }
 
@@ -78,5 +88,8 @@ document.getElementById('site').addEventListener('keydown', (e) => {
 });
 load();
 
-// ponytail: debug helper, remove when stable
-setTimeout(showDebug, 100);
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && (changes[BLOCKED_KEY] || changes[UNLOCKED_KEY])) {
+    load();
+  }
+});
